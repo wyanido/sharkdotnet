@@ -1,7 +1,8 @@
 /// CANVAS BOUNDS
 #macro CANVASWID 960
 #macro CANVASHI 1000
-#macro INTERP 2
+#macro INTERP 3
+#macro MAXINK 1000
 
 room_set_width(rm_Game, CANVASWID);
 room_set_height(rm_Game, CANVASHI);
@@ -14,6 +15,7 @@ function Game() constructor {
 	canvasInk = [new Ink(-32, -32)];
 	preInk = new vec2(0, 0);
 	preCanvas = noone;
+	username = "Shark" + string(irandom_range(100, 999));
 	
 	Update = function() {
 		
@@ -39,6 +41,7 @@ function Game() constructor {
 			var _dist = point_distance(preMouse.x, preMouse.y, mouse_x, mouse_y) / INTERP;
 				
 			// CONNECT DOTS WITH LINE
+
 			for(var i = 0; i < _dist; i++) {
 				var _dot = new vec2(
 					lerp(preMouse.x, mouse_x, (1 / (_dist)) * i), 
@@ -55,7 +58,7 @@ function Game() constructor {
 						
 				}
 			}
-
+			
 		}
 		
 		preMouse = new vec2(mouse_x, mouse_y);
@@ -67,7 +70,7 @@ function Game() constructor {
 		
 		/// DRAW CANVAS
 		// INK
-		var _refresh = (array_length(canvasInk) > 500);
+		var _refresh = (array_length(canvasInk) > MAXINK);
 		
 		if(_refresh) { var _canvas = surface_create(CANVASWID, CANVASHI); surface_set_target(_canvas); }
 		
@@ -117,8 +120,18 @@ function Game() constructor {
 		draw_rectangle(0, 0, CAMWID, 64, false);
 		
 		draw_set_colour(c_white);
-		draw_text(8, 8, "You are offline. Press F1 to Connect.");
-		draw_text(8, 24, array_length(canvasInk));
+		
+		if(!instance_exists(obj_Network)) {
+			draw_text(8, 8, "You are offline. Press F1 to Connect to a server, or F2 to Host (Currently Unsupported)");
+		} else {
+			if(obj_Network.client.socket == 0) {
+				draw_text(8, 8, "We're trying to connect you to a server, sit tight!");
+			} else {
+				draw_text(8, 8, "Connected! There are " + string(ds_map_size(obj_Network.client.cln_SocketIDs)) + " player(s) online.");
+			}
+		}
+		
+		draw_text(8, 24, string(array_length(canvasInk)) + " Ink Instance(s) on the Canvas");
 		
 	}
 	

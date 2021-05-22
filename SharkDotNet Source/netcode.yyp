@@ -4,9 +4,13 @@
     {"id":{"name":"obj_Game","path":"objects/obj_Game/obj_Game.yy",},"order":1,},
     {"id":{"name":"Ink","path":"scripts/Ink/Ink.yy",},"order":3,},
     {"id":{"name":"Button","path":"scripts/Button/Button.yy",},"order":2,},
+    {"id":{"name":"s_Cursor","path":"sprites/s_Cursor/s_Cursor.yy",},"order":1,},
     {"id":{"name":"s_Checker","path":"sprites/s_Checker/s_Checker.yy",},"order":0,},
+    {"id":{"name":"obj_Network","path":"objects/obj_Network/obj_Network.yy",},"order":4,},
     {"id":{"name":"Vectors","path":"scripts/Vectors/Vectors.yy",},"order":0,},
+    {"id":{"name":"Network","path":"scripts/Network/Network.yy",},"order":4,},
     {"id":{"name":"Camera","path":"scripts/Camera/Camera.yy",},"order":0,},
+    {"id":{"name":"User","path":"scripts/User/User.yy",},"order":5,},
     {"id":{"name":"rm_Game","path":"rooms/rm_Game/rm_Game.yy",},"order":0,},
   ],
   "Options": [
