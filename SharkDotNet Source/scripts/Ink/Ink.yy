@@ -2,8 +2,8 @@
   "isDnD": false,
   "isCompatibility": false,
   "parent": {
-    "name": "Script Objects",
-    "path": "folders/Core/Script Objects.yy",
+    "name": "Math",
+    "path": "folders/Core/Math.yy",
   },
   "resourceVersion": "1.0",
   "name": "Ink",

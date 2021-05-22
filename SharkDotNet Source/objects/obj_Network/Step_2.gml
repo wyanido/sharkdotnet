@@ -1,4 +1,4 @@
-if(!alarm[0]) 
+if(playerExists) 
 {
 	player.Update();	
 }

@@ -1,27 +1,52 @@
 /// CAMERA BOUNDS
-#macro CAMWID 1280
-#macro CAMHI 720
 
 function Camera() constructor {
 	
 	/// INITIALISE WORLD VIEW
 	cam = camera_create();
 	pos = new vec2(0, 0);
+	
+	camSize = new vec2(1280, 720);
+	
 	mousePrevious = new vec2(mouse_x, mouse_y);
 	
 	var _vm = matrix_build_lookat(pos.x, pos.y, -10, pos.x, pos.y, 0, 0, 1, 0);
-	var _pm = matrix_build_projection_ortho(CAMWID, CAMHI, 0, 32000);
+	var _pm = matrix_build_projection_ortho(camSize.x, camSize.y, 0, 32000);
 	
 	camera_set_view_mat(cam, _vm);
 	camera_set_proj_mat(cam, _pm);
 	
 	view_camera[0] = cam;
 	
-	window_set_size(CAMWID, CAMHI);
-	surface_resize(application_surface, CAMWID, CAMHI);
+	window_set_size(camSize.x, camSize.y);
+	surface_resize(application_surface, camSize.x, camSize.y);
 	display_reset(0, 0);
 	
-	Update = function() {
+	Resize = function() 
+	{
+		
+		show_debug_message("Window was resized!");
+		
+		camSize = new vec2(window_get_width(), window_get_height());
+		
+		var _vm = matrix_build_lookat(pos.x, pos.y, -10, pos.x, pos.y, 0, 0, 1, 0);
+		var _pm = matrix_build_projection_ortho(camSize.x, camSize.y, 0, 32000);
+		
+		camera_set_view_mat(cam, _vm);
+		camera_set_proj_mat(cam, _pm);
+		
+		surface_resize(application_surface, camSize.x, camSize.y);
+		display_reset(0, 0);
+		
+	}
+	
+	Update = function() 
+	{
+		
+		if(window_get_width() != camSize.x || window_get_height() != camSize.y) 
+		{
+			Resize();	
+		}
 		
 		if(keyboard_check(vk_space) && mouse_check_button(mb_left)) {
 			if(!panning) 

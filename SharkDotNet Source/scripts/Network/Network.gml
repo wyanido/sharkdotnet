@@ -17,7 +17,11 @@ enum net {
 	
 	// CURSOR
 	cursor_Move,
-	cursor_Sync,
+	cursor_Move_Sync,
+	cursor_Draw,
+	cursor_Draw_Sync,
+	cursor_Erase,
+	cursor_Erase_Sync,
 	
 	// LOBBY ACTIONS
 	lobby_Destroy
@@ -31,7 +35,7 @@ function Network() constructor {
 	network_set_config(network_config_use_non_blocking_socket, 1);
 
 	port = 7123;
-	protocol = 1;
+	protocol = 2;
 	ip = "sharkdotnet.duckdns.org";
 	
 }
@@ -148,10 +152,46 @@ function Server() : Network() constructor {
 					
 					buffer_seek(srv_Buffer,  buffer_seek_start, 0);
 					buffer_write(srv_Buffer, buffer_u8, net.from_Server);
-					buffer_write(srv_Buffer, buffer_u8, net.cursor_Sync);
+					buffer_write(srv_Buffer, buffer_u8, net.cursor_Move_Sync);
 					buffer_write(srv_Buffer, buffer_u8, socket);
 					buffer_write(srv_Buffer, buffer_s16, _x);
 					buffer_write(srv_Buffer, buffer_s16, _y);
+					network_send_packet(_socket, srv_Buffer, buffer_tell(srv_Buffer));
+				}
+
+			break;
+			case(net.cursor_Draw):
+				var _x = buffer_read(buffer, buffer_s16);
+				var _y = buffer_read(buffer, buffer_s16);
+				var _size = buffer_read(buffer, buffer_u8);
+				
+				for(var i = 0; i < ds_list_size(srv_SocketList); i ++) {
+					var _socket = ds_list_find_value(srv_SocketList, i);
+					
+					buffer_seek(srv_Buffer,  buffer_seek_start, 0);
+					buffer_write(srv_Buffer, buffer_u8, net.from_Server);
+					buffer_write(srv_Buffer, buffer_u8, net.cursor_Draw_Sync);
+					buffer_write(srv_Buffer, buffer_s16, _x);
+					buffer_write(srv_Buffer, buffer_s16, _y);
+					buffer_write(srv_Buffer, buffer_u8, _size);
+					network_send_packet(_socket, srv_Buffer, buffer_tell(srv_Buffer));
+				}
+
+			break;
+			case(net.cursor_Erase):
+				var _x = buffer_read(buffer, buffer_s16);
+				var _y = buffer_read(buffer, buffer_s16);
+				var _size = buffer_read(buffer, buffer_u8);
+				
+				for(var i = 0; i < ds_list_size(srv_SocketList); i ++) {
+					var _socket = ds_list_find_value(srv_SocketList, i);
+					
+					buffer_seek(srv_Buffer,  buffer_seek_start, 0);
+					buffer_write(srv_Buffer, buffer_u8, net.from_Server);
+					buffer_write(srv_Buffer, buffer_u8, net.cursor_Erase_Sync);
+					buffer_write(srv_Buffer, buffer_s16, _x);
+					buffer_write(srv_Buffer, buffer_s16, _y);
+					buffer_write(srv_Buffer, buffer_u8, _size);
 					network_send_packet(_socket, srv_Buffer, buffer_tell(srv_Buffer));
 				}
 
@@ -242,7 +282,7 @@ function Client() : Network() constructor {
 
 		switch(_msgID) {
 			case(net.protocol_Match):
-				with(obj_Network) { player = new LocalUser(mouse_x, mouse_y, obj_Game.game.username); }
+				with(obj_Network) { player = new LocalUser(mouse_x, mouse_y, obj_Game.game.username); playerExists = true; }
 				
 				buffer_seek(cln_Buffer, buffer_seek_start, 0);
 				buffer_write(cln_Buffer, buffer_u8, net.from_Client);
@@ -265,9 +305,12 @@ function Client() : Network() constructor {
 				var x_ = buffer_read(buffer, buffer_s16);
 				var y_ = buffer_read(buffer, buffer_s16);
 			
-				var _self = new PeerUser(x_, y_, _user)
+				var _self = new PeerUser(x_, y_, _user);
+				_self.visible = false;
 			
 				ds_map_add(cln_SocketIDs, _socket, _self);
+				
+				obj_Game.game.connected = true;
 			break;
 			case(net.player_Join):
 				var _socket = buffer_read(buffer, buffer_u8);
@@ -287,7 +330,7 @@ function Client() : Network() constructor {
 		
 				ds_map_delete(cln_SocketIDs, _socket);
 			break;
-			case(net.cursor_Sync):
+			case(net.cursor_Move_Sync):
 				var _sock = buffer_read(buffer, buffer_u8);
 				var _x = buffer_read(buffer, buffer_s16);
 				var _y = buffer_read(buffer, buffer_s16);
@@ -296,6 +339,32 @@ function Client() : Network() constructor {
 					var _player = ds_map_find_value(cln_SocketIDs, _sock);
 		
 					_player.pos = new vec2(_x, _y);
+				}
+
+			break;
+			case(net.cursor_Draw_Sync):
+				var _x = buffer_read(buffer, buffer_s16);
+				var _y = buffer_read(buffer, buffer_s16);
+				var _size = buffer_read(buffer, buffer_u8);
+				
+				with(obj_Game.game) {
+					var _ink = new Ink(_x, _y);
+					canvasInk[array_length(canvasInk)] = _ink;
+					
+					_ink.r = _size;
+				}
+
+			break;
+			case(net.cursor_Erase_Sync):
+				var _x = buffer_read(buffer, buffer_s16);
+				var _y = buffer_read(buffer, buffer_s16);
+				var _size = buffer_read(buffer, buffer_u8);
+				
+				with(obj_Game.game) {
+					var _ink = new Erase(_x, _y);
+					canvasErase[array_length(canvasErase)] = _ink;
+					
+					_ink.r = _size;
 				}
 
 			break;

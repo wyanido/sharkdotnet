@@ -1,5 +1,7 @@
 /// @desc CREATE NETWORK
 
+playerExists = false;
+
 type = noone;
 alarm[0] = 10;
 
