@@ -36,7 +36,7 @@ function Network() constructor {
 	network_set_config(network_config_use_non_blocking_socket, 1);
 
 	port = 7123;
-	protocol = 3;
+	protocol = 4;
 	ip = "sharkdotnet.duckdns.org";
 	
 }

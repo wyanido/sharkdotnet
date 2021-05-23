@@ -5,13 +5,14 @@ function Camera() constructor {
 	/// INITIALISE WORLD VIEW
 	cam = camera_create();
 	pos = new vec2(0, 0);
+	zoom = 1;
 	
-	camSize = new vec2(1280, 720);
+	camSize = new vec2(1280 / zoom, 720 / zoom);
 	
 	mousePrevious = new vec2(mouse_x, mouse_y);
 	
 	var _vm = matrix_build_lookat(pos.x, pos.y, -10, pos.x, pos.y, 0, 0, 1, 0);
-	var _pm = matrix_build_projection_ortho(camSize.x, camSize.y, 0, 32000);
+	var _pm = matrix_build_projection_ortho(camSize.x / zoom, camSize.y / zoom, 0, 32000);
 	
 	camera_set_view_mat(cam, _vm);
 	camera_set_proj_mat(cam, _pm);
@@ -25,12 +26,10 @@ function Camera() constructor {
 	Resize = function() 
 	{
 		
-		show_debug_message("Window was resized!");
-		
 		camSize = new vec2(window_get_width(), window_get_height());
 		
 		var _vm = matrix_build_lookat(pos.x, pos.y, -10, pos.x, pos.y, 0, 0, 1, 0);
-		var _pm = matrix_build_projection_ortho(camSize.x, camSize.y, 0, 32000);
+		var _pm = matrix_build_projection_ortho(camSize.x / zoom, camSize.y / zoom, 0, 32000);
 		
 		camera_set_view_mat(cam, _vm);
 		camera_set_proj_mat(cam, _pm);
@@ -43,12 +42,33 @@ function Camera() constructor {
 	Update = function() 
 	{
 		
+		if(keyboard_check(vk_lcontrol)) {
+			var _zoomed = false;
+			
+			if(mouse_wheel_down()) {
+				zoom -= 0.25;	
+				_zoomed = true;
+			} 
+			
+			if(mouse_wheel_up()) {
+				zoom += 0.25;	
+				_zoomed = true;
+			} 
+			
+			zoom = clamp(zoom, 0.5, 4);
+			
+			if(_zoomed) {
+				var _pm = matrix_build_projection_ortho(camSize.x / zoom, camSize.y / zoom, 0, 32000);	
+				camera_set_proj_mat(cam, _pm);
+			}
+		}
+		
 		if(window_get_width() != camSize.x || window_get_height() != camSize.y) 
 		{
 			Resize();	
 		}
 		
-		if(keyboard_check(vk_space) && mouse_check_button(mb_left)) {
+		if((keyboard_check(vk_space) && mouse_check_button(mb_left)) || mouse_check_button(mb_middle)) {
 			if(!panning) 
 			{
 				panning = true;
@@ -66,7 +86,7 @@ function Camera() constructor {
 			// APPLY TO CAMERA
 			var _vm = matrix_build_lookat(_view.x, _view.y, -10, _view.x, _view.y, 0, 0, 1, 0);
 			camera_set_view_mat(cam, _vm);
-			
+
 			pos = _view;
 
 		} else {
