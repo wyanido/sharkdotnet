@@ -14,6 +14,7 @@ enum net {
 	player_Disconnect,
 	player_Connect,
 	player_Join,
+	player_GetCanvas,
 	
 	// CURSOR
 	cursor_Move,
@@ -35,7 +36,7 @@ function Network() constructor {
 	network_set_config(network_config_use_non_blocking_socket, 1);
 
 	port = 7123;
-	protocol = 2;
+	protocol = 3;
 	ip = "sharkdotnet.duckdns.org";
 	
 }
@@ -101,7 +102,7 @@ function Server() : Network() constructor {
 				buffer_write(srv_Buffer, buffer_s16, _x);
 				buffer_write(srv_Buffer, buffer_s16, _y);
 				network_send_packet(socket, srv_Buffer, buffer_tell(srv_Buffer));
-			
+				
 				// Send already joined clients to connecting client
 				for(var i = 0; i < ds_list_size(srv_SocketList); i ++) {
 					var _socket = ds_list_find_value(srv_SocketList, i);
@@ -138,6 +139,20 @@ function Server() : Network() constructor {
 						network_send_packet(_socket, srv_Buffer, buffer_tell(srv_Buffer));
 					}
 				}
+				
+				var _canvas = obj_Game.game.GetCanvas();
+				var _canvasBuffer = buffer_create(1024, buffer_grow, 1);
+				
+				buffer_seek(_canvasBuffer,  buffer_seek_start, 0);
+				buffer_write(_canvasBuffer, buffer_u8, net.from_Server);
+				buffer_write(_canvasBuffer, buffer_u8, net.player_GetCanvas);
+				buffer_get_surface(_canvasBuffer, _canvas, 2);
+				
+				network_send_packet(socket, _canvasBuffer, buffer_tell(_canvasBuffer));
+				
+				surface_free(_canvas);
+				buffer_delete(_canvasBuffer);
+				
 			break;
 			case(net.cursor_Move):
 				var _x = buffer_read(buffer, buffer_s16);
@@ -306,7 +321,7 @@ function Client() : Network() constructor {
 			case(net.protocol_Mismatch):
 				
 				show_message("You're playing on an outdated version!");
-				client.Destroy();
+				instance_destroy(obj_Network);
 				
 			break;
 			case(net.player_Connect):
@@ -314,13 +329,25 @@ function Client() : Network() constructor {
 				var _user = buffer_read(buffer, buffer_string);
 				var x_ = buffer_read(buffer, buffer_s16);
 				var y_ = buffer_read(buffer, buffer_s16);
-			
+
 				var _self = new PeerUser(x_, y_, _user);
 				_self.visible = false;
 			
 				ds_map_add(cln_SocketIDs, _socket, _self);
 				
 				obj_Game.game.connected = true;
+				obj_Game.game.pulledCanvas = 0;
+			break;
+			case(net.player_GetCanvas):
+				var _canvas = surface_create(CANVASWID, CANVASHI);
+
+				buffer_set_surface(buffer, _canvas, buffer_tell(buffer));
+
+				obj_Game.game.preCanvas = sprite_create_from_surface(_canvas, 0, 0, CANVASWID, CANVASHI, false, false, 0, 0);
+
+				surface_free(_canvas);
+				
+				obj_Game.game.pulledCanvas = 1;
 			break;
 			case(net.player_Join):
 				var _socket = buffer_read(buffer, buffer_u8);

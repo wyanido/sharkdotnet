@@ -3,9 +3,10 @@ function User(_x, _y, _name) constructor  {
 	
 	pos = new vec2(_x, _y);
 	user = _name;
+	visible = true;
 	
 	Render = function() {
-		draw_sprite(s_Cursor, 0, pos.x, pos.y);
+		draw_sprite_ext(s_Cursor, 0, pos.x, pos.y, 2, 2, 0, c_white, 1);
 		// show_debug_message("Drew cursor at: " + string(pos));
 	}
 
@@ -69,18 +70,29 @@ function LocalUser(_x, _y, _name) : User(_x, _y, _name) constructor  {
 
 function PeerUser(_x, _y, _name) : User(_x, _y, _name) constructor {
 	
-	
 	Render = function() {
-		draw_sprite(s_Cursor, 0, pos.x, pos.y);
+		if(visible) {
+			draw_sprite_ext(s_Cursor, 0, pos.x, pos.y, 2, 2, 0, c_white, 1);
+			
+			draw_set_colour(c_black);
+			draw_set_alpha(0.5);
+			
+			var _w = string_width(user) / 2;
+			var _h = string_height(user) / 2;
+			var _pad = 4;
+			
+			draw_rectangle(pos.x - _w - _pad + 8, pos.y - _h + 46 - _pad, pos.x + _w + _pad + 8, pos.y + _h + 46 + _pad, false);
+			draw_set_alpha(1);
+			
+			draw_set_colour(c_lime);
 		
-		draw_set_colour(c_lime);
+			draw_set_valign(fa_top);
+			draw_set_halign(fa_center);
+			draw_text(pos.x + 8, pos.y + 38, user);
+			draw_set_halign(fa_left);
 		
-		draw_set_halign(fa_center);
-		draw_text(pos.x, pos.y + 8, user);
-		draw_set_halign(fa_left);
-		
-		draw_set_colour(c_black);
-		
+			draw_set_colour(c_black);
+		}
 	}
 	
 }

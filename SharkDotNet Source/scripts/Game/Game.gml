@@ -9,8 +9,12 @@ room_set_height(rm_Game, CANVASHI);
 enum cr {
 	point,
 	cross,
-	drag
+	drag,
+	scale_h,
+	scale_v
 }
+
+randomize();
 
 function Game() constructor {
 	
@@ -19,19 +23,34 @@ function Game() constructor {
 	panning = false;
 	canvasInk = [new Ink(-32, -32, 5)];
 	canvasErase = [];
-	preInk = new vec2(0, 0);
+	preInk = new vec3(0, 0, 0);
 	preCanvas = noone;
 	preErase = noone;
-	username = "Shark" + string(irandom_range(100, 999));
+	username = get_string("Please enter your username.", "Shark" + string(irandom_range(100, 999)));
 	connected = false;
 	preMouse = new vec2(-32, -32); 
+	preMouse_global = new vec2(-32, -32);
+	
+	pulledCanvas = -1;
 	
 	cursorSize = 5;
 	cursor = cr.point;
 	
-	CursorAction = function(_x, _y, _type) {
+	// WINDOW
+	drag = false;
+	winDrag = new vec2(0, 0);
+	
+	scale = false;
+	scaleSide = -1;
+	winSize = new vec2(0, 0);
+	scaleCursor = new vec2(0, 0);
+	
+	edgeDistance = 0;
+	
+	CursorAction = function(_x, _y, _size, _type) {
 		// EXIT IF OUT OF BOUNDS
 		if(_x < 0 || _x > room_width || _y < 0 || _y > room_height) { exit; }
+		if(connected && pulledCanvas != 1) { exit; }
 		
 		if(_type == 1) {
 			
@@ -45,7 +64,7 @@ function Game() constructor {
 			
 		}
 
-		preInk = new vec2(_x, _y);
+		preInk = new vec3(_x, _y, _size);
 				
 		// SEND ACTION
 		if(instance_exists(obj_Network) && obj_Network.playerExists) {
@@ -68,17 +87,31 @@ function Game() constructor {
 			cursor = cr.drag;
 		} else {
 			var _mX = device_mouse_x_to_gui(0), _mY = device_mouse_y_to_gui(0);
-			if((mouse_x > 0 && mouse_x < room_width && mouse_y > 0 && mouse_y < room_height) && _mY > 64) {
-				cursor = cr.cross;
-			} else if(_mX > 0 && _mX < window_get_width() - 1 && _mY > 0 && _mY < window_get_height() - 1) {
-				cursor = cr.point;
-			} else {
-				cursor = cr.point;
+			var _scaling = false;
+			
+			if((device_mouse_x_to_gui(0) < 4 || device_mouse_x_to_gui(0) > window_get_width() - 10) || (scale && (scaleSide == 0 || scaleSide == 2))) {
+				_scaling = true;
+				cursor = cr.scale_h;
+			}
+			
+			if((device_mouse_y_to_gui(0) < 4 || device_mouse_y_to_gui(0) > window_get_height() - 10) || (scale && (scaleSide == 1 || scaleSide == 3))) {
+				_scaling = true;
+				cursor = cr.scale_v;
+			}
+			
+			if(!_scaling) {
+				if((mouse_x > 0 && mouse_x < room_width && mouse_y > 0 && mouse_y < room_height) && _mY > 64) {
+					cursor = cr.cross;
+				} else if(_mX > 0 && _mX < window_get_width() - 1 && _mY > 0 && _mY < window_get_height() - 1) {
+					cursor = cr.point;
+				} else {
+					cursor = cr.point;
+				}
 			}
 		}
 		
 		/// DRAW ON CANVAS
-		if(!keyboard_check(vk_space) && !(mouse_x == preMouse.x && mouse_y == preMouse.y) && device_mouse_y_to_gui(0) > 64) {
+		if(!keyboard_check(vk_space) && !((mouse_x == preInk.x && mouse_y == preInk.y) && preInk.z == cursorSize) && device_mouse_y_to_gui(0) > 64 && !drag && !scale) {
 			
 			// ACTION TYPE
 			var _act = 0;
@@ -87,7 +120,8 @@ function Game() constructor {
 			
 			if(_act > 0) 
 			{
-				CursorAction(mouse_x, mouse_y, _act);
+
+				CursorAction(mouse_x, mouse_y, cursorSize, _act);
 				
 				var _dist = point_distance(preMouse.x, preMouse.y, mouse_x, mouse_y) / min(cursorSize * 0.5, 2);
 				
@@ -100,7 +134,7 @@ function Game() constructor {
 					if!(_dot.x == preInk.x && _dot.y == preInk.y) 
 					{
 					
-						CursorAction(_dot.x, _dot.y, _act);
+						CursorAction(_dot.x, _dot.y, cursorSize, _act);
 
 					}
 				}
@@ -108,6 +142,56 @@ function Game() constructor {
 			
 			 preMouse = new vec2(mouse_x, mouse_y);
 		}
+		
+	}
+	
+	GetCanvas = function() 
+	{
+		
+		var _canvas = surface_create(CANVASWID, CANVASHI);
+		surface_set_target(_canvas);
+		
+		// SAVE CACHE
+		if(preCanvas != noone) {
+			draw_sprite(preCanvas, 0, 0, 0);
+		}
+		
+		// SAVE CURRENT INK
+		for(var i = 0; i < array_length(canvasInk); i ++) 
+		{
+			canvasInk[i].Render();
+
+		}
+		
+		surface_reset_target();
+				
+		var _eraseLayer = surface_create(CANVASWID, CANVASHI);
+		surface_set_target(_eraseLayer);
+				
+		draw_clear_alpha(c_black,0)
+		draw_set_alpha(1);
+		draw_set_colour(c_white);
+				
+		for(var i = 0; i < array_length(canvasErase); i ++) 
+		{
+			canvasErase[i].Render();
+					
+		}
+
+		surface_reset_target();
+				
+		surface_set_target(_canvas);
+				
+		gpu_set_blendmode(bm_subtract);	
+		draw_surface(_eraseLayer, 0, 0);
+		gpu_set_blendmode(bm_normal);
+				
+		surface_reset_target();
+		surface_free(_eraseLayer);
+
+		return _canvas;
+		
+		surface_free(_canvas);
 		
 	}
 	
@@ -161,7 +245,7 @@ function Game() constructor {
 				draw_surface(_eraseLayer, 0, 0);
 				
 				gpu_set_blendmode(bm_normal);
-
+				
 				surface_free(_eraseLayer);
 
 			}
@@ -197,44 +281,173 @@ function Game() constructor {
 		draw_circle(mouse_x, mouse_y, cursorSize, true);
 
 	}
-
+	
 	GUI = function() 
 	{
 		
 		draw_set_font(fnt_GUI);
 		
-		/// DRAW GAME INTERFACE
+		// WINDOW BORDER
+		var _border = 4;
+		
+		draw_set_colour(make_colour_rgb(33, 33, 33));
+		draw_rectangle(0, 0, _border, window_get_height(), false);
+		draw_rectangle(0, window_get_height(), window_get_width(), window_get_height() - _border - 2, false);
+		draw_rectangle(window_get_width(), 0, window_get_width() - _border - 2, window_get_height(), false);
+		
 		draw_set_colour(make_colour_rgb(51, 51, 51));
-		draw_rectangle(0, 0, obj_Game.game.view.camSize.x, 64, false);
+		draw_rectangle(_border, 32, window_get_width() - _border, 64, false);
+		
+		/// HEADER BAR
+		draw_set_colour(make_colour_rgb(33, 33, 33));
+		draw_rectangle(0, 0, obj_Game.game.view.camSize.x, 32, false);
 		
 		draw_set_colour(c_white);
+		draw_set_valign(fa_middle);
+		
+		draw_text(16, 18, "SHARKDOTNET | Version Alpha 0.1");
+		
+		draw_text(16, 50, "Net Status: ");
 		
 		if(!instance_exists(obj_Network)) {
 			draw_set_colour(c_red);
 			
-			draw_text(8, 8, "You are offline. F1 to Connect | F2 to Host (Currently Unsupported)");
-			
-			draw_set_colour(c_white);
+			draw_text(16 + string_width("Net Status: "), 50, "Offline. F1 to Connect | F2 to Host (Currently Unsupported)");
 		} else {
 			if(!connected) {
 				draw_set_colour(c_yellow);
 				
-				draw_text(8, 8, "We're trying to connect you to a server, sit tight!");
-				
-				draw_set_colour(c_white);
+				draw_text(16 + string_width("Net Status: "), 50, "Connecting...");
+
 			} else {
 				draw_set_colour(c_lime);
 				
-				draw_text(8, 8, "Connected! There are " + string(ds_map_size(obj_Network.client.cln_SocketIDs)) + " player(s) online.");
+				draw_text(16 + string_width("Net Status: "), 50, "Connected! There are " + string(ds_map_size(obj_Network.client.cln_SocketIDs)) + " player(s) online.");	
 				
-				draw_set_colour(c_white);
+				if(pulledCanvas != 1) {
+					draw_set_colour(c_black);
+					draw_set_alpha(0.75);
+					draw_rectangle(4, 64, window_get_width() - 6, window_get_height() - 6, false);
+					draw_set_alpha(1);
+					
+					draw_set_colour(c_white);
+					draw_set_halign(fa_center);
+					draw_set_valign(fa_middle);
+					draw_text(window_get_width() / 2, (window_get_height() + 64) / 2, "Downloading Canvas from Host...\nPlease wait a moment before drawing.");
+					draw_set_halign(fa_left);
+					draw_set_valign(fa_top);
+				}
 			}
 		}
 		
-		draw_text(8, 32, string(array_length(canvasInk)) + " Ink Instance(s) on the Canvas");
+		draw_set_colour(c_white);
+		
+		draw_set_valign(fa_middle);
+		draw_set_halign(fa_center);
+		draw_text(window_get_width() / 2, 50, string(array_length(canvasInk)) + " Ink Instance(s) on the Canvas");
+		draw_set_halign(fa_left);
+		
+		draw_set_valign(fa_top);
+		
+		var _a = (device_mouse_x_to_gui(0) > window_get_width() - 32 && device_mouse_y_to_gui(0) < 32) ? 0.5 : 1;
+		
+		draw_sprite_ext(s_Button, 0, window_get_width() - 32, 2, 2, 2, 0, c_white, _a);
+		
+		if(_a == 0.5 && mouse_check_button_pressed(mb_left)) { game_end(); }
+		
+		#region DRAG WINDOW
+		
+			if(device_mouse_y_to_gui(0) < 32 && mouse_check_button_pressed(mb_left) && !drag && !scale) {
+				drag = true;
+				winDrag = new vec2(display_mouse_get_x() - window_get_x(), display_mouse_get_y() - window_get_y());
+			}
+			
+			if(!mouse_check_button(mb_left)) { drag = 0; }
+			
+			if(drag) {
+				window_set_position(display_mouse_get_x() - winDrag.x, display_mouse_get_y() - winDrag.y);
+			}
+			
+		#endregion
+		
+		#region SCALE WINDOW
+			
+			if(!mouse_check_button(mb_left)) { scale = 0; scaleSide = -1; }
+			
+			if(mouse_check_button_pressed(mb_left) && !scale) {
+				// LEFT
+				if(device_mouse_x_to_gui(0) < 4) {
+					scale = true;
+					scaleSide = 0;
+				}
+				
+				// TOP
+				if(device_mouse_y_to_gui(0) < 4) {
+					scale = true;
+					scaleSide = 1;
+				}
+				
+				// RIGHT
+				if(device_mouse_x_to_gui(0) > window_get_width() - 10) {
+					scale = true;
+					scaleSide = 2;
+				}
+				
+				// RIGHT
+				if(device_mouse_y_to_gui(0) > window_get_height() - 10) {
+					scale = true;
+					scaleSide = 3;
+				}
+				
+				if(scale) {
+					winSize = new vec2(window_get_width(), window_get_height());
+					winDrag = new vec2(window_get_x(), window_get_y());
+					scaleCursor = new vec2(display_mouse_get_x(), display_mouse_get_y())
+					
+					if(scaleSide == 0 || scaleSide == 2) {
+						edgeDistance = device_mouse_x_to_gui(0);
+					} else {
+						edgeDistance = device_mouse_y_to_gui(0);
+					}
+				}
+			}
+			
+			if(scale) {
+				switch(scaleSide) {
+					case(0):
+						var _x = winSize.x - (display_mouse_get_x() - scaleCursor.x);
+						if(_x < 512) { display_mouse_set(preMouse_global.x, preMouse_global.y); }
+						_x = winSize.x - (display_mouse_get_x() - scaleCursor.x);
+						
+						window_set_position(display_mouse_get_x() - edgeDistance, winDrag.y);
+						window_set_size(_x, winSize.y);
+					break;
+					case(1):
+						window_set_position(winDrag.x, display_mouse_get_y() - edgeDistance);
+						window_set_size(winSize.x, winSize.y - (display_mouse_get_y() - scaleCursor.y));
+					break;
+					case(2):
+						var _x = winSize.x + (display_mouse_get_x() - scaleCursor.x);
+						if(_x < 512) { display_mouse_set(preMouse_global.x, preMouse_global.y); }
+						var _x = winSize.x + (display_mouse_get_x() - scaleCursor.x);
+						
+						window_set_position(winDrag.x, winDrag.y);
+						window_set_size(_x, winSize.y);
+					break;
+					case(3):
+						window_set_position(winDrag.x, winDrag.y);
+						window_set_size(winSize.x, winSize.y + (display_mouse_get_y() - scaleCursor.y));
+					break;
+				}
+				
+				preMouse_global = new vec2(display_mouse_get_x(), display_mouse_get_y());
+			}
+		#endregion
 		
 		// CURSOR
-		draw_sprite_ext(s_Cursor, cursor, device_mouse_x_to_gui(0), device_mouse_y_to_gui(0), 2, 2, 0, c_white, 1);
+		if(!(mouse_check_button(mb_right) && (mouse_x > 0 && mouse_x < room_width && mouse_y > 0 && mouse_y < room_height))) {
+			draw_sprite_ext(s_Cursor, cursor, device_mouse_x_to_gui(0), device_mouse_y_to_gui(0), 2, 2, 0, c_white, 1);
+		}
 		
 	}
 	

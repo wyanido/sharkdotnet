@@ -11,6 +11,7 @@
     {"id":{"name":"Vectors","path":"scripts/Vectors/Vectors.yy",},"order":0,},
     {"id":{"name":"shd_Erase","path":"shaders/shd_Erase/shd_Erase.yy",},"order":2,},
     {"id":{"name":"Network","path":"scripts/Network/Network.yy",},"order":4,},
+    {"id":{"name":"s_Button","path":"sprites/s_Button/s_Button.yy",},"order":4,},
     {"id":{"name":"Camera","path":"scripts/Camera/Camera.yy",},"order":0,},
     {"id":{"name":"User","path":"scripts/User/User.yy",},"order":5,},
     {"id":{"name":"rm_Game","path":"rooms/rm_Game/rm_Game.yy",},"order":0,},
