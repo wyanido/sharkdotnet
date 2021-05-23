@@ -1,11 +1,16 @@
 /// CANVAS BOUNDS
 #macro CANVASWID 1280
 #macro CANVASHI 720
-#macro INTERP 3
-#macro MAXINK 300
+#macro MAXINK 400
 
 room_set_width(rm_Game, CANVASWID);
 room_set_height(rm_Game, CANVASHI);
+
+enum cr {
+	point,
+	cross,
+	drag
+}
 
 function Game() constructor {
 	
@@ -19,30 +24,32 @@ function Game() constructor {
 	preErase = noone;
 	username = "Shark" + string(irandom_range(100, 999));
 	connected = false;
+	preMouse = new vec2(-32, -32); 
 	
 	cursorSize = 5;
+	cursor = cr.point;
 	
-	CursorPen = function(_x, _y) {
-		var _ink = new Ink(_x, _y, cursorSize);
+	CursorAction = function(_x, _y, _type) {
+		// EXIT IF OUT OF BOUNDS
+		if(_x < 0 || _x > room_width || _y < 0 || _y > room_height) { exit; }
 		
-		canvasInk[array_length(canvasInk)] = _ink;
-		preInk = new vec2(_x, _y);
-				
-		// SEND PEN STROKE
-		if(instance_exists(obj_Network) && obj_Network.playerExists) {
-			obj_Network.player.SendInk(_x, _y, cursorSize);
+		if(_type == 1) {
+			
+			var _blot = new Ink(_x, _y, cursorSize);
+			canvasInk[array_length(canvasInk)] = _blot;
+			
+		} else {
+			
+			var _blot = new Erase(_x, _y, cursorSize);
+			canvasErase[array_length(canvasErase)] = _blot;
+			
 		}
-	}
-	
-	CursorErase = function(_x, _y) {
-		var _ink = new Erase(_x, _y, cursorSize);
-		
-		canvasErase[array_length(canvasErase)] = _ink;
+
 		preInk = new vec2(_x, _y);
 				
-		// SEND PEN STROKE
+		// SEND ACTION
 		if(instance_exists(obj_Network) && obj_Network.playerExists) {
-			obj_Network.player.SendErase(_x, _y, cursorSize);
+			obj_Network.player.SendAction(_x, _y, cursorSize, _type);
 		}
 	}
 	
@@ -58,25 +65,32 @@ function Game() constructor {
 		// SET CURSOR
 		if(keyboard_check(vk_space)) 
 		{
-			window_set_cursor(cr_drag);	
+			cursor = cr.drag;
 		} else {
 			var _mX = device_mouse_x_to_gui(0), _mY = device_mouse_y_to_gui(0);
-			if(mouse_x > 0 && mouse_x < room_width && mouse_y > 0 && mouse_y < room_height) {
-				window_set_cursor(cr_cross);	
+			if((mouse_x > 0 && mouse_x < room_width && mouse_y > 0 && mouse_y < room_height) && _mY > 64) {
+				cursor = cr.cross;
 			} else if(_mX > 0 && _mX < window_get_width() - 1 && _mY > 0 && _mY < window_get_height() - 1) {
-				window_set_cursor(cr_default);	
+				cursor = cr.point;
+			} else {
+				cursor = cr.point;
 			}
 		}
 		
 		/// DRAW ON CANVAS
-		if(!keyboard_check(vk_space)) {
-			if(mouse_check_button(mb_right)) 
+		if(!keyboard_check(vk_space) && !(mouse_x == preMouse.x && mouse_y == preMouse.y) && device_mouse_y_to_gui(0) > 64) {
+			
+			// ACTION TYPE
+			var _act = 0;
+			if(mouse_check_button(mb_left)) { _act = 1; } 
+			else if(mouse_check_button(mb_right)) { _act = 2; }
+			
+			if(_act > 0) 
 			{
-			
-				CursorErase(mouse_x, mouse_y);
-			
-				var _dist = point_distance(preMouse.x, preMouse.y, mouse_x, mouse_y) / INTERP;
-			
+				CursorAction(mouse_x, mouse_y, _act);
+				
+				var _dist = point_distance(preMouse.x, preMouse.y, mouse_x, mouse_y) / min(cursorSize * 0.5, 2);
+				
 				for(var i = 0; i < _dist; i++) {
 					var _dot = new vec2(
 						lerp(preMouse.x, mouse_x, (1 / (_dist)) * i), 
@@ -86,36 +100,14 @@ function Game() constructor {
 					if!(_dot.x == preInk.x && _dot.y == preInk.y) 
 					{
 					
-						CursorErase(_dot.x, _dot.y);
+						CursorAction(_dot.x, _dot.y, _act);
 
 					}
 				}
+			}
 			
-			}
-				else if(mouse_check_button(mb_left)) 
-			{
-
-				CursorPen(mouse_x, mouse_y);
-
-				var _dist = point_distance(preMouse.x, preMouse.y, mouse_x, mouse_y) / INTERP;
-
-				for(var i = 0; i < _dist; i++) {
-					var _dot = new vec2(
-						lerp(preMouse.x, mouse_x, (1 / (_dist)) * i), 
-						lerp(preMouse.y, mouse_y, (1 / (_dist)) * i)	
-					)
-					
-					if!(_dot.x == preInk.x && _dot.y == preInk.y) 
-					{
-					
-						CursorPen(_dot.x, _dot.y);
-
-					}
-				}	
-			}
+			 preMouse = new vec2(mouse_x, mouse_y);
 		}
-		
-		preMouse = new vec2(mouse_x, mouse_y);
 		
 	}
 	
@@ -154,7 +146,7 @@ function Game() constructor {
 					
 				}
 				
-				if((array_length(canvasInk) > 1)) {
+				if((array_length(canvasInk) > 1) || (array_length(canvasErase) > MAXINK)) {
 					delete canvasErase;
 					canvasErase = [];
 				}
@@ -209,6 +201,8 @@ function Game() constructor {
 	GUI = function() 
 	{
 		
+		draw_set_font(fnt_GUI);
+		
 		/// DRAW GAME INTERFACE
 		draw_set_colour(make_colour_rgb(51, 51, 51));
 		draw_rectangle(0, 0, obj_Game.game.view.camSize.x, 64, false);
@@ -237,7 +231,10 @@ function Game() constructor {
 			}
 		}
 		
-		draw_text(8, 24, string(array_length(canvasInk)) + " Ink Instance(s) on the Canvas");
+		draw_text(8, 32, string(array_length(canvasInk)) + " Ink Instance(s) on the Canvas");
+		
+		// CURSOR
+		draw_sprite_ext(s_Cursor, cursor, device_mouse_x_to_gui(0), device_mouse_y_to_gui(0), 2, 2, 0, c_white, 1);
 		
 	}
 	

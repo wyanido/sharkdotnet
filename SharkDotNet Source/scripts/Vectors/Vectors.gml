@@ -1,5 +1,7 @@
 
-/// @func vec2(x, y)
+/// @func			vec2(x, y)
+/// @param {real}	x
+/// @param {real}	y
 function vec2() constructor {
 	
 	self.x = argument0;

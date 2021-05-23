@@ -165,16 +165,21 @@ function Server() : Network() constructor {
 				var _y = buffer_read(buffer, buffer_s16);
 				var _size = buffer_read(buffer, buffer_u8);
 				
+				var _sock = ds_map_find_value(srv_SocketIDs, socket);
+				
 				for(var i = 0; i < ds_list_size(srv_SocketList); i ++) {
 					var _socket = ds_list_find_value(srv_SocketList, i);
 					
-					buffer_seek(srv_Buffer,  buffer_seek_start, 0);
-					buffer_write(srv_Buffer, buffer_u8, net.from_Server);
-					buffer_write(srv_Buffer, buffer_u8, net.cursor_Draw_Sync);
-					buffer_write(srv_Buffer, buffer_s16, _x);
-					buffer_write(srv_Buffer, buffer_s16, _y);
-					buffer_write(srv_Buffer, buffer_u8, _size);
-					network_send_packet(_socket, srv_Buffer, buffer_tell(srv_Buffer));
+					if(_sock != _socket) 
+					{
+						buffer_seek(srv_Buffer,  buffer_seek_start, 0);
+						buffer_write(srv_Buffer, buffer_u8, net.from_Server);
+						buffer_write(srv_Buffer, buffer_u8, net.cursor_Draw_Sync);
+						buffer_write(srv_Buffer, buffer_s16, _x);
+						buffer_write(srv_Buffer, buffer_s16, _y);
+						buffer_write(srv_Buffer, buffer_u8, _size);
+						network_send_packet(_socket, srv_Buffer, buffer_tell(srv_Buffer));
+					}
 				}
 
 			break;
@@ -183,16 +188,21 @@ function Server() : Network() constructor {
 				var _y = buffer_read(buffer, buffer_s16);
 				var _size = buffer_read(buffer, buffer_u8);
 				
+				var _sock = ds_map_find_value(srv_SocketIDs, socket);
+				
 				for(var i = 0; i < ds_list_size(srv_SocketList); i ++) {
 					var _socket = ds_list_find_value(srv_SocketList, i);
 					
-					buffer_seek(srv_Buffer,  buffer_seek_start, 0);
-					buffer_write(srv_Buffer, buffer_u8, net.from_Server);
-					buffer_write(srv_Buffer, buffer_u8, net.cursor_Erase_Sync);
-					buffer_write(srv_Buffer, buffer_s16, _x);
-					buffer_write(srv_Buffer, buffer_s16, _y);
-					buffer_write(srv_Buffer, buffer_u8, _size);
-					network_send_packet(_socket, srv_Buffer, buffer_tell(srv_Buffer));
+					if(_sock != _socket) 
+					{
+						buffer_seek(srv_Buffer,  buffer_seek_start, 0);
+						buffer_write(srv_Buffer, buffer_u8, net.from_Server);
+						buffer_write(srv_Buffer, buffer_u8, net.cursor_Erase_Sync);
+						buffer_write(srv_Buffer, buffer_s16, _x);
+						buffer_write(srv_Buffer, buffer_s16, _y);
+						buffer_write(srv_Buffer, buffer_u8, _size);
+						network_send_packet(_socket, srv_Buffer, buffer_tell(srv_Buffer));
+					}
 				}
 
 			break;

@@ -1,6 +1,7 @@
 {
   "resources": [
     {"id":{"name":"Game","path":"scripts/Game/Game.yy",},"order":1,},
+    {"id":{"name":"fnt_GUI","path":"fonts/fnt_GUI/fnt_GUI.yy",},"order":3,},
     {"id":{"name":"obj_Game","path":"objects/obj_Game/obj_Game.yy",},"order":1,},
     {"id":{"name":"Ink","path":"scripts/Ink/Ink.yy",},"order":1,},
     {"id":{"name":"Button","path":"scripts/Button/Button.yy",},"order":2,},
