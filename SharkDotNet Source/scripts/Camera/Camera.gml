@@ -45,13 +45,23 @@ function Camera() constructor {
 		if(keyboard_check(vk_lcontrol)) {
 			var _zoomed = false;
 			
-			if(mouse_wheel_down()) {
-				zoom -= 0.25;	
+			if(mouse_wheel_down() || keyboard_check_pressed(vk_down)) {
+				if(mouse_wheel_down()) {
+					zoom -= 0.25;
+				} else {
+					zoom -= 0.5;
+				}
+				
 				_zoomed = true;
 			} 
 			
-			if(mouse_wheel_up()) {
-				zoom += 0.25;	
+			if(mouse_wheel_up() || keyboard_check_pressed(vk_up)) {
+				if(mouse_wheel_up()) {
+					zoom += 0.25;
+				} else {
+					zoom += 0.5;
+				}
+				
 				_zoomed = true;
 			} 
 			
@@ -63,7 +73,7 @@ function Camera() constructor {
 			}
 		}
 		
-		if(window_get_width() != camSize.x || window_get_height() != camSize.y) 
+		if(window_get_width() != camSize.x || window_get_height() != camSize.y) && !obj_Game.game.scale 
 		{
 			Resize();	
 		}

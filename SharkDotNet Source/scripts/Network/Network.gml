@@ -68,7 +68,7 @@ function Server() : Network() constructor {
 					buffer_write(srv_Buffer, buffer_u8, net.protocol_Match);
 					network_send_packet(socket, srv_Buffer, buffer_tell(srv_Buffer));
 				
-					var _user = new ConnectedUser();
+					var _user = new ConnectedUser(0, 0, "client");
 					ds_map_add(srv_SocketIDs, socket, _user);
 					ds_list_add(srv_SocketList, socket);
 					
@@ -385,10 +385,8 @@ function Client() : Network() constructor {
 				var _size = buffer_read(buffer, buffer_u8);
 				
 				with(obj_Game.game) {
-					var _ink = new Ink(_x, _y);
+					var _ink = new Ink(_x, _y, _size);
 					canvasInk[array_length(canvasInk)] = _ink;
-					
-					_ink.r = _size;
 				}
 
 			break;
@@ -398,10 +396,8 @@ function Client() : Network() constructor {
 				var _size = buffer_read(buffer, buffer_u8);
 				
 				with(obj_Game.game) {
-					var _ink = new Erase(_x, _y);
+					var _ink = new Erase(_x, _y, _size);
 					canvasErase[array_length(canvasErase)] = _ink;
-					
-					_ink.r = _size;
 				}
 
 			break;

@@ -1,19 +1,19 @@
 
 /// @func			vec2(x, y)
-/// @param {real}	x
-/// @param {real}	y
-function vec2() constructor {
+
+function vec2(_x, _y) constructor {
 	
-	self.x = argument0;
-	self.y = argument1;
+	self.x = _x;
+	self.y = _y;
 	
 }
 
-/// @func vec3(x, y, z)
-function vec3() constructor {
+/// @func			vec2(x, y, z)
+
+function vec3(_x, _y, _z) constructor {
 	
-	self.x = argument0;
-	self.y = argument1;
-	self.z = argument2;
+	self.x = _x;
+	self.y = _y;
+	self.z = _z;
 	
 }

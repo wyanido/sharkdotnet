@@ -18,6 +18,8 @@ randomize();
 
 function Game() constructor {
 	
+	window_set_cursor(cr_none) 
+	
 	/// INIITALISE GAME
 	view = new Camera();
 	panning = false;
@@ -29,7 +31,9 @@ function Game() constructor {
 	username = get_string("Please enter your username.", "Shark" + string(irandom_range(100, 999)));
 	connected = false;
 	preMouse = new vec2(-32, -32); 
-	preMouse_global = new vec2(-32, -32);
+	preMouse_global = new vec2(display_mouse_get_x(), display_mouse_get_y());
+	
+	resized = false;
 	
 	pulledCanvas = -1;
 	
@@ -39,7 +43,7 @@ function Game() constructor {
 	// WINDOW
 	drag = false;
 	winDrag = new vec2(0, 0);
-	
+
 	scale = false;
 	scaleSide = -1;
 	winSize = new vec2(0, 0);
@@ -79,73 +83,136 @@ function Game() constructor {
 			if(!mouse_check_button(mb_left)) { scale = 0; scaleSide = -1; }
 			
 			if(mouse_check_button_pressed(mb_left) && !scale) {
-				// LEFT
-				if(device_mouse_x_to_gui(0) < 4) {
-					scale = true;
-					scaleSide = 0;
-				}
+				scaleSide = [];
 				
-				// TOP
-				if(device_mouse_y_to_gui(0) < 4) {
-					scale = true;
-					scaleSide = 1;
-				}
+				#region 4 DIRECTIONAL
+					// LEFT
+					if(device_mouse_x_to_gui(0) < 4) {
+						scale = true;
+						scaleSide = [0];
+					}
 				
-				// RIGHT
-				if(device_mouse_x_to_gui(0) > window_get_width() - 10) {
-					scale = true;
-					scaleSide = 2;
-				}
+					// TOP
+					if(device_mouse_y_to_gui(0) < 4) {
+						scale = true;
+						scaleSide = [1];
+					}
 				
-				// RIGHT
-				if(device_mouse_y_to_gui(0) > window_get_height() - 10) {
-					scale = true;
-					scaleSide = 3;
-				}
+					// RIGHT
+					if(device_mouse_x_to_gui(0) > window_get_width() - 6) {
+						scale = true;
+						scaleSide = [2];
+					}
+				
+					// BOTTOM
+					if(device_mouse_y_to_gui(0) > window_get_height() - 6) {
+						scale = true;
+						scaleSide = [3];
+					}
+				#endregion
+				
+				#region 4 DIAGONAL
+					// TOP LEFT
+					if(device_mouse_x_to_gui(0) < 8 && device_mouse_y_to_gui(0) < 8) {
+						scale = true;
+						scaleSide = [0, 1];
+					}
+				
+					// TOP RIGHT
+					if(device_mouse_y_to_gui(0) < 8 && device_mouse_x_to_gui(0) > window_get_width() - 10) {
+						scale = true;
+						scaleSide = [2, 1];
+					}
+				
+					// BOTTOM LEFT
+					if(device_mouse_y_to_gui(0) > window_get_height() - 10 && device_mouse_x_to_gui(0) < 8) {
+						scale = true;
+						scaleSide = [3, 0];
+					}
+				
+					// BOTTOM RIGHT
+					if(device_mouse_y_to_gui(0) > window_get_height() - 10 && device_mouse_x_to_gui(0) > window_get_width() - 10) {
+						scale = true;
+						scaleSide = [3, 2];
+					}
+				#endregion
 				
 				if(scale) {
 					winSize = new vec2(window_get_width(), window_get_height());
 					winDrag = new vec2(window_get_x(), window_get_y());
 					scaleCursor = new vec2(display_mouse_get_x(), display_mouse_get_y())
 					
-					if(scaleSide == 0 || scaleSide == 2) {
-						edgeDistance = device_mouse_x_to_gui(0);
-					} else {
-						edgeDistance = device_mouse_y_to_gui(0);
+					for(var i = 0; i < array_length(scaleSide); i ++) {
+						if(scaleSide[i] == 0 || scaleSide[i] == 2) {
+							edgeDistance = device_mouse_x_to_gui(0);
+						} else {
+							edgeDistance = device_mouse_y_to_gui(0);
+						}
 					}
 				}
 			}
 			
-			if(scale) {
-				switch(scaleSide) {
-					case(0):
-						var _x = winSize.x - (display_mouse_get_x() - scaleCursor.x);
-						if(_x < 512) { display_mouse_set(preMouse_global.x, preMouse_global.y); }
-						_x = winSize.x - (display_mouse_get_x() - scaleCursor.x);
+			if(scale) {	
+				var _targetMouse = new vec2(display_mouse_get_x(), display_mouse_get_y())
+				var _targetScale = new vec2(window_get_width(), window_get_height());
+				var _targetPos = new vec2(window_get_x(), window_get_y())
+				
+				for(var i = 0; i < array_length(scaleSide); i ++) {
+					switch(scaleSide[i]) {
+						case(0):
+							var _ww = winSize.x - (_targetMouse.x - scaleCursor.x);
 						
-						window_set_position(display_mouse_get_x() - edgeDistance, winDrag.y);
-						window_set_size(_x, winSize.y);
-					break;
-					case(1):
-						window_set_position(winDrag.x, display_mouse_get_y() - edgeDistance);
-						window_set_size(winSize.x, winSize.y - (display_mouse_get_y() - scaleCursor.y));
-					break;
-					case(2):
-						var _x = winSize.x + (display_mouse_get_x() - scaleCursor.x);
-						if(_x < 512) { display_mouse_set(preMouse_global.x, preMouse_global.y); }
-						var _x = winSize.x + (display_mouse_get_x() - scaleCursor.x);
+							if(_ww < 512) {
+								_targetMouse.x = scaleCursor.x + winSize.x - 512;
+							} else {
+								_targetPos.x = _targetMouse.x - edgeDistance;
+								_targetScale.x = _ww;
+							}	
+						break;
+						case(1):
+							var _hh = winSize.y - (_targetMouse.y - scaleCursor.y);
 						
-						window_set_position(winDrag.x, winDrag.y);
-						window_set_size(_x, winSize.y);
-					break;
-					case(3):
-						window_set_position(winDrag.x, winDrag.y);
-						window_set_size(winSize.x, winSize.y + (display_mouse_get_y() - scaleCursor.y));
-					break;
+							if(_hh < 384) { 
+								_targetMouse.y = scaleCursor.y + winSize.y - 384; 
+							} else {
+								_targetPos.y = _targetMouse.y - edgeDistance;
+								_targetScale.y = _hh;
+							}
+						break;
+						case(2):
+							var _ww = winSize.x + (_targetMouse.x - scaleCursor.x);
+						
+							if(_ww < 512) { 
+								_targetMouse.x = scaleCursor.x - winSize.x + 512; 
+							} else {
+								_targetScale.x = _ww;
+							}
+						break;
+						case(3):
+							var _hh = winSize.y + (_targetMouse.y - scaleCursor.y);
+						
+							if(_hh < 384) { 
+								_targetMouse.y = scaleCursor.y - winSize.y + 384; 
+							} else {
+								_targetScale.y = _hh;
+							}
+						break;
+					}
 				}
 				
-				preMouse_global = new vec2(display_mouse_get_x(), display_mouse_get_y());
+				window_set_size(_targetScale.x, _targetScale.y);
+				window_set_position(_targetPos.x, _targetPos.y);
+				display_mouse_set(_targetMouse.x, _targetMouse.y);
+				
+				if(preMouse_global.x == display_mouse_get_x() && preMouse_global.y == display_mouse_get_y()) && !resized {
+					view.Resize()	
+					resized = true;
+				} else {
+					resized = false;
+				}	
 			}
+			
+			preMouse_global = new vec2(display_mouse_get_x(), display_mouse_get_y());
 		#endregion
 		
 		view.Update();
@@ -161,27 +228,56 @@ function Game() constructor {
 		if(keyboard_check(vk_space) || mouse_check_button(mb_middle)) 
 		{
 			cursor = cr.drag;
-		} else {
+			window_set_cursor(cr_none)
+			showGameCursor = true;
+		} else if(!scale) {
 			var _mX = device_mouse_x_to_gui(0), _mY = device_mouse_y_to_gui(0);
 			var _scaling = false;
 			
-			if((device_mouse_x_to_gui(0) < 4 || device_mouse_x_to_gui(0) > window_get_width() - 10) || (scale && (scaleSide == 0 || scaleSide == 2))) {
+						
+			// TOP LEFT / BOTTOM RIGHT
+			if(device_mouse_x_to_gui(0) < 8 && device_mouse_y_to_gui(0) < 8) || (device_mouse_y_to_gui(0) > window_get_height() - 10 && device_mouse_x_to_gui(0) > window_get_width() - 10) {
 				_scaling = true;
-				cursor = cr.scale_h;
+				window_set_cursor(cr_size_nwse)
+				showGameCursor = false;
 			}
-			
-			if((device_mouse_y_to_gui(0) < 4 || device_mouse_y_to_gui(0) > window_get_height() - 10) || (scale && (scaleSide == 1 || scaleSide == 3))) {
+				
+			// TOP RIGHT / BOTTOM LEFT
+			if(device_mouse_y_to_gui(0) < 8 && device_mouse_x_to_gui(0) > window_get_width() - 10) || (device_mouse_y_to_gui(0) > window_get_height() - 10 && device_mouse_x_to_gui(0) < 8){
 				_scaling = true;
-				cursor = cr.scale_v;
+				window_set_cursor(cr_size_nesw)
+				showGameCursor = false;
 			}
 			
 			if(!_scaling) {
+				// HORIZONTAL
+				if((device_mouse_x_to_gui(0) < 4 || device_mouse_x_to_gui(0) > window_get_width() - 6)) {
+					_scaling = true;
+					window_set_cursor(cr_size_we)
+					showGameCursor = false;
+				}
+			
+				// VERTICAL
+				if((device_mouse_y_to_gui(0) < 4 || device_mouse_y_to_gui(0) > window_get_height() - 6)) {
+					_scaling = true;
+					window_set_cursor(cr_size_ns)
+					showGameCursor = false;
+				}
+			}
+	
+			if(!_scaling) {
 				if((mouse_x > 0 && mouse_x < room_width && mouse_y > 0 && mouse_y < room_height) && _mY > 64) {
 					cursor = cr.cross;
+					window_set_cursor(cr_none)
+					showGameCursor = true;
 				} else if(_mX > 0 && _mX < window_get_width() - 1 && _mY > 0 && _mY < window_get_height() - 1) {
 					cursor = cr.point;
+					window_set_cursor(cr_none)
+					showGameCursor = true;
 				} else {
 					cursor = cr.point;
+					window_set_cursor(cr_none)
+					showGameCursor = true;
 				}
 			}
 		}
@@ -374,12 +470,12 @@ function Game() constructor {
 		var _border = 4;
 		
 		draw_set_colour(make_colour_rgb(33, 33, 33));
-		draw_rectangle(0, 0, _border, window_get_height(), false);
-		draw_rectangle(0, window_get_height(), window_get_width(), window_get_height() - _border - 2, false);
-		draw_rectangle(window_get_width(), 0, window_get_width() - 128 - _border - 2, window_get_height(), false);
+		draw_rectangle(0, 0, _border,view.camSize.y, false);
+		draw_rectangle(0, view.camSize.y, view.camSize.x, view.camSize.y - _border - 2, false);
+		draw_rectangle(view.camSize.x, 0, view.camSize.x - 128 - _border - 2, view.camSize.y, false);
 		
 		draw_set_colour(make_colour_rgb(51, 51, 51));
-		draw_rectangle(_border + 1, 32, window_get_width() - _border - 2, 64, false);
+		draw_rectangle(_border + 1, 32, view.camSize.x - _border - 2, 64, false);
 		
 		/// HEADER BAR
 		draw_set_colour(make_colour_rgb(33, 33, 33));
@@ -389,52 +485,53 @@ function Game() constructor {
 		draw_set_valign(fa_middle);
 		
 		draw_sprite(s_Icon, 0, 5, 2);
-		draw_text(40, 18, "SHARKDOTNET | Version Alpha 0.2");
-		draw_text(16, 50, "Draw: LMB  |  Pen Size: Scroll  |  Erase: RMB        Pan: Space + LMB / MMB  |  Zoom: CTRL + Scroll");
+		draw_text(40, 18, "SHARKDOTNET | Early Testing Alpha");
+		draw_text(16, 50, "Draw: LMB   |   Pen Size: Scroll   |   Erase: RMB        Pan: Space + LMB / MMB   |   Zoom: CTRL + Scroll / CTRL + UP/DOWN");
 		
 		draw_set_colour(c_white);
 		draw_set_halign(fa_left);
 		draw_set_valign(fa_top);
-					
-		var _a = (device_mouse_x_to_gui(0) > window_get_width() - 32 && device_mouse_y_to_gui(0) < 32) ? 0.5 : 1;
 		
-		draw_sprite_ext(s_Button, 0, window_get_width() - 32, 2, 2, 2, 0, c_white, _a);
+		var _dx = device_mouse_x_to_gui(0), _dy = device_mouse_y_to_gui(0);
+		var _a = ((_dx > view.camSize.x - 32 && _dx < view.camSize.x - 10) && (_dy < 32 && _dy > 4)) ? 0.5 : 1;
+		
+		draw_sprite_ext(s_Button, 0, view.camSize.x - 32, 2, 2, 2, 0, c_white, _a);
 		
 		if(_a == 0.5 && mouse_check_button_pressed(mb_left)) { game_end(); }
 		
 		// NETWORK BAR
 		draw_set_colour(make_colour_rgb(51, 51, 51));
 		
-		draw_rectangle(window_get_width() - 128, 72, window_get_width() - 10, 96, false);
-		draw_rectangle(window_get_width() - 128, 100, window_get_width() - 10, 100 + 192, false);
+		draw_rectangle(view.camSize.x - 128, 72, view.camSize.x - 10, 96, false);
+		draw_rectangle(view.camSize.x - 128, 100, view.camSize.x - 10, 100 + 192, false);
 		
-		draw_rectangle(window_get_width() - 128, 296, window_get_width() - 10, 292 + 30, false);
-		draw_rectangle(window_get_width() - 128, 326, window_get_width() - 10, 326 + 192, false);
+		draw_rectangle(view.camSize.x - 128, 296, view.camSize.x - 10, 292 + 30, false);
+		draw_rectangle(view.camSize.x - 128, 326, view.camSize.x - 10, 326 + 192, false);
 		
 		draw_set_colour(c_white);
-		draw_text(window_get_width() - 128 + 8, 84 - 6, "Network Info");
+		draw_text(view.camSize.x - 128 + 8, 84 - 6, "Network Info");
 		
 		if(!instance_exists(obj_Network)) {
 			draw_set_colour(c_red);
 			
-			draw_text_ext(window_get_width() - 128 + 8, 116 - 8, "You're Offline. Network Info is only accessible when connected to a server.\n\nPress F1 to locate a Server.", 20, 100);
+			draw_text_ext(view.camSize.x - 128 + 8, 116 - 8, "You're Offline. Network Info is only accessible when connected to a server.\n\nPress F1 to locate a Server.", 20, 100);
 		} else {
 			if(!connected) {
 				draw_set_colour(c_yellow);
 				
-				draw_text_ext(window_get_width() - 128 + 8, 116 - 8, "Attempting to establish a connection...", 20, 100);
+				draw_text_ext(view.camSize.x - 128 + 8, 116 - 8, "Attempting to establish a connection...", 20, 100);
 
 			} else {
 				draw_set_colour(c_lime);
-				draw_text_ext(window_get_width() - 128 + 8, 116 - 8, "Connected!", 20, 100);
+				draw_text_ext(view.camSize.x - 128 + 8, 116 - 8, "Connected!", 20, 100);
 				
 				draw_set_colour(c_white);
-				draw_text_ext(window_get_width() - 128 + 9, 302, "Online Users:", 20, 100);
+				draw_text_ext(view.camSize.x - 128 + 9, 302, "Online Users:", 20, 100);
 				
 				var _name = ds_map_find_first(obj_Network.client.cln_SocketIDs);
 				for(var i = 0; i < ds_map_size(obj_Network.client.cln_SocketIDs); i ++) {
 					
-					draw_text_ext(window_get_width() - 128 + 9, 332 + (16 * i), ds_map_find_value(obj_Network.client.cln_SocketIDs, _name).user, 20, 100);
+					draw_text_ext(view.camSize.x - 128 + 9, 332 + (16 * i), ds_map_find_value(obj_Network.client.cln_SocketIDs, _name).user, 20, 100);
 					
 					var _name = ds_map_find_next(obj_Network.client.cln_SocketIDs, _name);
 				}
@@ -442,13 +539,13 @@ function Game() constructor {
 				if(pulledCanvas != 1) {
 					draw_set_colour(c_black);
 					draw_set_alpha(0.75);
-					draw_rectangle(4, 64, window_get_width() - 128 - 4, window_get_height() - 6, false);
+					draw_rectangle(4, 64, view.camSize.x - 128 - 4, view.camSize.y - 6, false);
 					draw_set_alpha(1);
 					
 					draw_set_colour(c_white);
 					draw_set_halign(fa_center);
 					draw_set_valign(fa_middle);
-					draw_text((window_get_width() - 128 - 4) / 2, (window_get_height() + 64) / 2, "Downloading Canvas from Host...\nPlease wait a moment before drawing.");
+					draw_text((view.camSize.x - 128 - 4) / 2, (view.camSize.y + 64) / 2, "Downloading Canvas from Host...\nPlease wait a moment before drawing.");
 					draw_set_halign(fa_left);
 					draw_set_valign(fa_top);
 				}
@@ -458,11 +555,11 @@ function Game() constructor {
 		
 		// FOOTER
 		draw_set_colour(make_colour_rgb(51, 51, 51));
-		draw_rectangle(5, window_get_height() - 6 - 20, window_get_width() - 6, window_get_height() - 6, false);
+		draw_rectangle(5, view.camSize.y - 6 - 20, view.camSize.x - 6, view.camSize.y - 6, false);
 		
 		draw_set_colour(c_white);
 		draw_set_valign(fa_middle);
-		draw_text(8, window_get_height() - 15, "Zoom Scale: " + string(view.zoom * 100) + "%  |  Pen Size: " + string(cursorSize) + "  |  " + string(array_length(canvasInk)) + " Active Ink Instance(s)");
+		draw_text(8,  view.camSize.y - 15, "Zoom Scale: " + string(view.zoom * 100) + "%  |  Pen Size: " + string(cursorSize) + "  |  " + string(array_length(canvasInk)) + " Active Ink Instance(s)");
 		draw_set_valign(fa_top);
 		
 		#region DRAG WINDOW
@@ -481,10 +578,10 @@ function Game() constructor {
 		#endregion
 		
 		draw_set_colour(make_colour_rgb(51, 51, 51));
-		draw_rectangle(1, 1, window_get_width() - 2, window_get_height() - 2, true);
+		draw_rectangle(1, 1,  view.camSize.x - 2,  view.camSize.y - 2, true);
 		
 		// CURSOR
-		if(!(mouse_check_button(mb_right) && (mouse_x > 0 && mouse_x < room_width && mouse_y > 0 && mouse_y < room_height))) {
+		if(showGameCursor && (!(mouse_check_button(mb_right) && (mouse_x > 0 && mouse_x < room_width && mouse_y > 0 && mouse_y < room_height)))) {
 			draw_sprite_ext(s_Cursor, cursor, device_mouse_x_to_gui(0), device_mouse_y_to_gui(0), 2, 2, 0, c_white, 1);
 		}
 		
