@@ -1,12 +1,16 @@
 {
   "resources": [
+    {"id":{"name":"fnt_GUI_Title","path":"fonts/fnt_GUI_Title/fnt_GUI_Title.yy",},"order":7,},
     {"id":{"name":"Game","path":"scripts/Game/Game.yy",},"order":1,},
     {"id":{"name":"fnt_GUI","path":"fonts/fnt_GUI/fnt_GUI.yy",},"order":3,},
     {"id":{"name":"obj_Game","path":"objects/obj_Game/obj_Game.yy",},"order":1,},
     {"id":{"name":"Ink","path":"scripts/Ink/Ink.yy",},"order":1,},
+    {"id":{"name":"s_DefaultIcon","path":"sprites/s_DefaultIcon/s_DefaultIcon.yy",},"order":8,},
     {"id":{"name":"Button","path":"scripts/Button/Button.yy",},"order":2,},
     {"id":{"name":"s_Cursor","path":"sprites/s_Cursor/s_Cursor.yy",},"order":1,},
+    {"id":{"name":"DrawGUI","path":"scripts/DrawGUI/DrawGUI.yy",},"order":6,},
     {"id":{"name":"s_Checker","path":"sprites/s_Checker/s_Checker.yy",},"order":0,},
+    {"id":{"name":"fnt_Label","path":"fonts/fnt_Label/fnt_Label.yy",},"order":6,},
     {"id":{"name":"obj_Network","path":"objects/obj_Network/obj_Network.yy",},"order":4,},
     {"id":{"name":"Vectors","path":"scripts/Vectors/Vectors.yy",},"order":0,},
     {"id":{"name":"shd_Erase","path":"shaders/shd_Erase/shd_Erase.yy",},"order":2,},

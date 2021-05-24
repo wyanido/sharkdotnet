@@ -21,17 +21,20 @@ function Game() constructor {
 	window_set_cursor(cr_none) 
 	
 	/// INIITALISE GAME
+	newStroke = true;
 	view = new Camera();
 	panning = false;
 	canvasInk = [new Ink(-32, -32, 5)];
 	canvasErase = [];
 	preInk = new vec3(0, 0, 0);
 	preCanvas = noone;
-	preErase = noone;
 	username = get_string("Please enter your username.", "Shark" + string(irandom_range(100, 999)));
 	connected = false;
 	preMouse = new vec2(-32, -32); 
 	preMouse_global = new vec2(display_mouse_get_x(), display_mouse_get_y());
+	inkCounter = 0;
+	
+	showWelcome = true;
 	
 	resized = false;
 	
@@ -60,6 +63,10 @@ function Game() constructor {
 			
 			var _blot = new Ink(_x, _y, cursorSize);
 			canvasInk[array_length(canvasInk)] = _blot;
+			
+			if(!mouse_check_button(mb_right)) {
+				inkCounter ++;
+			}
 			
 		} else {
 			
@@ -162,8 +169,8 @@ function Game() constructor {
 						case(0):
 							var _ww = winSize.x - (_targetMouse.x - scaleCursor.x);
 						
-							if(_ww < 512) {
-								_targetMouse.x = scaleCursor.x + winSize.x - 512;
+							if(_ww < 640) {
+								_targetMouse.x = scaleCursor.x + winSize.x - 640;
 							} else {
 								_targetPos.x = _targetMouse.x - edgeDistance;
 								_targetScale.x = _ww;
@@ -172,8 +179,8 @@ function Game() constructor {
 						case(1):
 							var _hh = winSize.y - (_targetMouse.y - scaleCursor.y);
 						
-							if(_hh < 384) { 
-								_targetMouse.y = scaleCursor.y + winSize.y - 384; 
+							if(_hh < 512) { 
+								_targetMouse.y = scaleCursor.y + winSize.y - 512; 
 							} else {
 								_targetPos.y = _targetMouse.y - edgeDistance;
 								_targetScale.y = _hh;
@@ -182,8 +189,8 @@ function Game() constructor {
 						case(2):
 							var _ww = winSize.x + (_targetMouse.x - scaleCursor.x);
 						
-							if(_ww < 512) { 
-								_targetMouse.x = scaleCursor.x - winSize.x + 512; 
+							if(_ww < 640) { 
+								_targetMouse.x = scaleCursor.x - winSize.x + 640; 
 							} else {
 								_targetScale.x = _ww;
 							}
@@ -191,8 +198,8 @@ function Game() constructor {
 						case(3):
 							var _hh = winSize.y + (_targetMouse.y - scaleCursor.y);
 						
-							if(_hh < 384) { 
-								_targetMouse.y = scaleCursor.y - winSize.y + 384; 
+							if(_hh < 512) { 
+								_targetMouse.y = scaleCursor.y - winSize.y + 512; 
 							} else {
 								_targetScale.y = _hh;
 							}
@@ -225,12 +232,68 @@ function Game() constructor {
 		cursorSize = clamp(cursorSize, 2, 32);
 		
 		// SET CURSOR
-		if(keyboard_check(vk_space) || mouse_check_button(mb_middle)) 
-		{
-			cursor = cr.drag;
+		if(!scale && !showWelcome) {
+			if(keyboard_check(vk_space) || mouse_check_button(mb_middle)) 
+			{
+				cursor = cr.drag;
+				window_set_cursor(cr_none)
+				showGameCursor = true;
+			} else {
+				var _mX = device_mouse_x_to_gui(0), _mY = device_mouse_y_to_gui(0);
+				var _scaling = false;
+			
+						
+				// TOP LEFT / BOTTOM RIGHT
+				if(device_mouse_x_to_gui(0) < 8 && device_mouse_y_to_gui(0) < 8) || (device_mouse_y_to_gui(0) > window_get_height() - 10 && device_mouse_x_to_gui(0) > window_get_width() - 10) {
+					_scaling = true;
+					window_set_cursor(cr_size_nwse)
+					showGameCursor = false;
+				}
+				
+				// TOP RIGHT / BOTTOM LEFT
+				if(device_mouse_y_to_gui(0) < 8 && device_mouse_x_to_gui(0) > window_get_width() - 10) || (device_mouse_y_to_gui(0) > window_get_height() - 10 && device_mouse_x_to_gui(0) < 8){
+					_scaling = true;
+					window_set_cursor(cr_size_nesw)
+					showGameCursor = false;
+				}
+			
+				if(!_scaling) {
+					// HORIZONTAL
+					if((device_mouse_x_to_gui(0) < 4 || device_mouse_x_to_gui(0) > window_get_width() - 6)) {
+						_scaling = true;
+						window_set_cursor(cr_size_we)
+						showGameCursor = false;
+					}
+			
+					// VERTICAL
+					if((device_mouse_y_to_gui(0) < 4 || device_mouse_y_to_gui(0) > window_get_height() - 6)) {
+						_scaling = true;
+						window_set_cursor(cr_size_ns)
+						showGameCursor = false;
+					}
+				}
+	
+				if(!_scaling) {
+					if((mouse_x > 0 && mouse_x < room_width && mouse_y > 0 && mouse_y < room_height) && _mY > 64) {
+						cursor = cr.cross;
+						window_set_cursor(cr_none)
+						showGameCursor = true;
+					} else if(_mX > 0 && _mX < window_get_width() - 1 && _mY > 0 && _mY < window_get_height() - 1) {
+						cursor = cr.point;
+						window_set_cursor(cr_none)
+						showGameCursor = true;
+					} else {
+						cursor = cr.point;
+						window_set_cursor(cr_none)
+						showGameCursor = true;
+					}
+				}
+			}
+		} else if(showWelcome) {
+			cursor = cr.point;
 			window_set_cursor(cr_none)
 			showGameCursor = true;
-		} else if(!scale) {
+			
 			var _mX = device_mouse_x_to_gui(0), _mY = device_mouse_y_to_gui(0);
 			var _scaling = false;
 			
@@ -264,38 +327,28 @@ function Game() constructor {
 					showGameCursor = false;
 				}
 			}
-	
-			if(!_scaling) {
-				if((mouse_x > 0 && mouse_x < room_width && mouse_y > 0 && mouse_y < room_height) && _mY > 64) {
-					cursor = cr.cross;
-					window_set_cursor(cr_none)
-					showGameCursor = true;
-				} else if(_mX > 0 && _mX < window_get_width() - 1 && _mY > 0 && _mY < window_get_height() - 1) {
-					cursor = cr.point;
-					window_set_cursor(cr_none)
-					showGameCursor = true;
-				} else {
-					cursor = cr.point;
-					window_set_cursor(cr_none)
-					showGameCursor = true;
-				}
-			}
 		}
 		
+		
+		
 		/// DRAW ON CANVAS
-		if(!(keyboard_check(vk_space) || mouse_check_button(mb_middle)) && !((mouse_x == preInk.x && mouse_y == preInk.y) && preInk.z == cursorSize) && device_mouse_y_to_gui(0) > 64 && !drag && !scale) {
-			
+		if(!(keyboard_check(vk_space) || mouse_check_button(mb_middle)) && device_mouse_y_to_gui(0) > 64 && !drag && !scale) {
+
 			// ACTION TYPE
 			var _act = 0;
 			if(mouse_check_button(mb_left)) { _act = 1; } 
 			else if(mouse_check_button(mb_right)) { _act = 2; }
 			
-			if(_act > 0) 
+			
+			
+			if(_act > 0 && ((abs(mouse_x - preInk.x) > 0 || abs(mouse_y - preInk.y) > 0) || newStroke))
 			{
-
+				
+				if(_act == 1) { newStroke = false; }
+				
 				CursorAction(mouse_x, mouse_y, cursorSize, _act);
 				
-				var _dist = point_distance(preMouse.x, preMouse.y, mouse_x, mouse_y) / min(cursorSize * 0.5, 2);
+				var _dist = point_distance(preMouse.x, preMouse.y, mouse_x, mouse_y) / min(cursorSize * 10, 2);
 				
 				for(var i = 0; i < _dist; i++) {
 					var _dot = new vec2(
@@ -312,7 +365,9 @@ function Game() constructor {
 				}
 			}
 			
-			 preMouse = new vec2(mouse_x, mouse_y);
+			if(!mouse_check_button(mb_left)) { newStroke = true; }
+			
+			preMouse = new vec2(mouse_x, mouse_y);
 		}
 		
 	}
@@ -402,7 +457,7 @@ function Game() constructor {
 					
 				}
 				
-				if((array_length(canvasInk) > 1) || (array_length(canvasErase) > MAXINK)) {
+				if((array_length(canvasInk) > 1) || (array_length(canvasErase) > MAXINK) || !mouse_check_button(mb_right)) {
 					delete canvasErase;
 					canvasErase = [];
 				}
@@ -412,7 +467,6 @@ function Game() constructor {
 				surface_set_target(_canvas);
 				
 				gpu_set_blendmode(bm_subtract);
-				sprite_delete(preErase);
 				
 				draw_surface(_eraseLayer, 0, 0);
 				
@@ -450,7 +504,7 @@ function Game() constructor {
 		
 		// PEN SIZE
 		draw_set_colour(c_white);
-		if(!(keyboard_check(vk_space) || mouse_check_button(mb_middle)) && (mouse_x > 0 && mouse_x < room_width && mouse_y > 0 && mouse_y < room_height)) {
+		if(!(keyboard_check(vk_space) || mouse_check_button(mb_middle)) && (mouse_x > 0 && mouse_x < room_width && mouse_y > 0 && mouse_y < room_height)) && !showWelcome {
 			gpu_set_blendmode_ext(bm_inv_dest_color, bm_inv_src_alpha);
 			
 			
@@ -468,18 +522,20 @@ function Game() constructor {
 		
 		// WINDOW BORDER
 		var _border = 4;
+		var _sideBar = 160;
+		var _header = 32;
 		
 		draw_set_colour(make_colour_rgb(33, 33, 33));
 		draw_rectangle(0, 0, _border,view.camSize.y, false);
 		draw_rectangle(0, view.camSize.y, view.camSize.x, view.camSize.y - _border - 2, false);
-		draw_rectangle(view.camSize.x, 0, view.camSize.x - 128 - _border - 2, view.camSize.y, false);
+		draw_rectangle(view.camSize.x, 0, view.camSize.x - _sideBar - _border - 2, view.camSize.y, false);
 		
 		draw_set_colour(make_colour_rgb(51, 51, 51));
 		draw_rectangle(_border + 1, 32, view.camSize.x - _border - 2, 64, false);
 		
 		/// HEADER BAR
 		draw_set_colour(make_colour_rgb(33, 33, 33));
-		draw_rectangle(0, 0, obj_Game.game.view.camSize.x, 32, false);
+		draw_rectangle(0, 0, obj_Game.game.view.camSize.x, _header, false);
 		
 		draw_set_colour(c_white);
 		draw_set_valign(fa_middle);
@@ -502,36 +558,92 @@ function Game() constructor {
 		// NETWORK BAR
 		draw_set_colour(make_colour_rgb(51, 51, 51));
 		
-		draw_rectangle(view.camSize.x - 128, 72, view.camSize.x - 10, 96, false);
-		draw_rectangle(view.camSize.x - 128, 100, view.camSize.x - 10, 100 + 192, false);
+		#region Session Info
+			draw_rectangle(view.camSize.x - _sideBar, 72, view.camSize.x - 10, 96, false);
+			draw_rectangle(view.camSize.x - _sideBar, 100, view.camSize.x - 10, 162, false);
+			
+			draw_set_colour(c_white);
+			draw_text_ext(view.camSize.x - _sideBar + 8, 116 - 8, "Net Status: ", 20, _sideBar - 16);
+			draw_text_ext(view.camSize.x - _sideBar + 8, 116 - 8 + 16, "Ink Placed: " + string(inkCounter), 20, _sideBar - 16);
+			draw_text_ext(view.camSize.x - _sideBar + 8, 116 - 8 + 32, "Session Time: " + string(floor(get_timer() / 1000000)) + "s", 20, _sideBar - 16);
+		#endregion
 		
-		draw_rectangle(view.camSize.x - 128, 296, view.camSize.x - 10, 292 + 30, false);
-		draw_rectangle(view.camSize.x - 128, 326, view.camSize.x - 10, 326 + 192, false);
+		#region Profile Section
+			draw_set_colour(make_colour_rgb(51, 51, 51));
+			draw_rectangle(view.camSize.x - _sideBar, 166, view.camSize.x - 10, 190, false);
+			draw_rectangle(view.camSize.x - _sideBar, 194, view.camSize.x - 10, 194 + 132, false);
+			
+			draw_set_colour(c_white);
+			draw_text_ext(view.camSize.x - _sideBar + 8, 172, "My Profile", 20, _sideBar - 16);
+			
+			draw_set_colour(make_colour_rgb(33, 33, 33));
+			draw_sprite_ext(s_DefaultIcon, 0, view.camSize.x - _sideBar + 8, 204, 3, 3, 0, c_white, 1);
+			draw_rectangle(view.camSize.x - _sideBar + 8, 204, view.camSize.x - _sideBar + 7 + 48, 250, true);
+			
+			draw_set_color(c_white);
+			draw_text(view.camSize.x - _sideBar + 64, 208, username);
+			draw_text(view.camSize.x - _sideBar + 64, 232, "New User");
+			
+			// BUTTONS
+			draw_set_colour(make_colour_rgb(96, 96, 96));
+			draw_rectangle(view.camSize.x - _sideBar + 8, 258, view.camSize.x - _sideBar + 140, 282, true);
+			
+			draw_set_color(c_white);
+			draw_set_halign(fa_middle);
+			draw_text(view.camSize.x - _sideBar + 72, 264, "Change Username");
+			draw_set_halign(fa_top);
+			
+			draw_set_colour(make_colour_rgb(80, 80, 80));
+			draw_rectangle(view.camSize.x - _sideBar + 8, 258 + 32, view.camSize.x - _sideBar + 140, 282 + 32, true);
+			
+			draw_set_color(c_white);
+			draw_set_halign(fa_middle);
+			draw_text(view.camSize.x - _sideBar + 72, 264 + 32, "Change Icon");
+			draw_set_halign(fa_top);
+
+		#endregion
+		
+		// HEADER
+		draw_set_colour(make_colour_rgb(51, 51, 51));
+		draw_rectangle(view.camSize.x - _sideBar, 166 + 184, view.camSize.x - 10, 190 + 184, false);
+		draw_rectangle(view.camSize.x - _sideBar, 194 + 184, view.camSize.x - 10, 194 + 132 + 184, false);
+			
+		draw_set_colour(c_white);
+		
+		var _users = instance_exists(obj_Network) ? string(ds_map_size(obj_Network.client.cln_SocketIDs)) : "0";
+		
+		draw_text_ext(view.camSize.x - _sideBar + 8, 172 + 184, "Online Users (" + _users +")", 20, _sideBar - 16);
+		
+		draw_set_colour(make_colour_rgb(96, 96, 96));
+		draw_line(view.camSize.x - _sideBar + 2, 338, view.camSize.x - 12, 338);
 		
 		draw_set_colour(c_white);
-		draw_text(view.camSize.x - 128 + 8, 84 - 6, "Network Info");
+		draw_text(view.camSize.x - _sideBar + 8, 84 - 6, "Session Info");
 		
 		if(!instance_exists(obj_Network)) {
-			draw_set_colour(c_red);
 			
-			draw_text_ext(view.camSize.x - 128 + 8, 116 - 8, "You're Offline. Network Info is only accessible when connected to a server.\n\nPress F1 to locate a Server.", 20, 100);
+			draw_set_colour(c_red);
+			draw_text_ext(view.camSize.x - _sideBar + 8 + string_width("Net Status: "), 116 - 8, "Offline", 20, _sideBar - 16);
+			
+			draw_set_colour(c_white);
+			draw_text_ext(view.camSize.x - _sideBar + 8, 172 + 184 + 30, "You're Offline! Connect to a server to see who you're doodling with.", 20, _sideBar - 16);
+			
 		} else {
 			if(!connected) {
-				draw_set_colour(c_yellow);
 				
-				draw_text_ext(view.camSize.x - 128 + 8, 116 - 8, "Attempting to establish a connection...", 20, 100);
+				draw_set_colour(c_yellow);
+				draw_text_ext(view.camSize.x - _sideBar + 8 + string_width("Net Status: "), 116 - 8, "Connecting...", 20, _sideBar - 16);
 
 			} else {
 				draw_set_colour(c_lime);
-				draw_text_ext(view.camSize.x - 128 + 8, 116 - 8, "Connected!", 20, 100);
+				draw_text_ext(view.camSize.x - _sideBar + 8 + string_width("Net Status: "), 116 - 8, "Connected!", 20, _sideBar - 16);
 				
 				draw_set_colour(c_white);
-				draw_text_ext(view.camSize.x - 128 + 9, 302, "Online Users:", 20, 100);
-				
 				var _name = ds_map_find_first(obj_Network.client.cln_SocketIDs);
+				
 				for(var i = 0; i < ds_map_size(obj_Network.client.cln_SocketIDs); i ++) {
 					
-					draw_text_ext(view.camSize.x - 128 + 9, 332 + (16 * i), ds_map_find_value(obj_Network.client.cln_SocketIDs, _name).user, 20, 100);
+					draw_text_ext(view.camSize.x - _sideBar + 9, 388 + (16 * i), ds_map_find_value(obj_Network.client.cln_SocketIDs, _name).user, 20, 100);
 					
 					var _name = ds_map_find_next(obj_Network.client.cln_SocketIDs, _name);
 				}
@@ -539,13 +651,13 @@ function Game() constructor {
 				if(pulledCanvas != 1) {
 					draw_set_colour(c_black);
 					draw_set_alpha(0.75);
-					draw_rectangle(4, 64, view.camSize.x - 128 - 4, view.camSize.y - 6, false);
+					draw_rectangle(4, 64, view.camSize.x - _sideBar - 4, view.camSize.y - 6, false);
 					draw_set_alpha(1);
 					
 					draw_set_colour(c_white);
 					draw_set_halign(fa_center);
 					draw_set_valign(fa_middle);
-					draw_text((view.camSize.x - 128 - 4) / 2, (view.camSize.y + 64) / 2, "Downloading Canvas from Host...\nPlease wait a moment before drawing.");
+					draw_text((view.camSize.x - _sideBar - 4) / 2, (view.camSize.y + 64) / 2, "Downloading Canvas from Host...\nPlease wait a moment before drawing.");
 					draw_set_halign(fa_left);
 					draw_set_valign(fa_top);
 				}
@@ -563,7 +675,7 @@ function Game() constructor {
 		draw_set_valign(fa_top);
 		
 		#region DRAG WINDOW
-		
+			
 			if(device_mouse_y_to_gui(0) < 32 && mouse_check_button_pressed(mb_left) && !drag && !scale) {
 				drag = true;
 				winDrag = new vec2(display_mouse_get_x() - window_get_x(), display_mouse_get_y() - window_get_y());
@@ -580,11 +692,19 @@ function Game() constructor {
 		draw_set_colour(make_colour_rgb(51, 51, 51));
 		draw_rectangle(1, 1,  view.camSize.x - 2,  view.camSize.y - 2, true);
 		
+		if(showWelcome) {
+			if((mouse_check_button_pressed(mb_left) || mouse_check_button_pressed(mb_right) || mouse_check_button_pressed(mb_middle)) && !scale && !drag) {
+				showWelcome = false;
+			}
+			
+			GUI_Welcome();
+		}
+		
 		// CURSOR
 		if(showGameCursor && (!(mouse_check_button(mb_right) && (mouse_x > 0 && mouse_x < room_width && mouse_y > 0 && mouse_y < room_height)))) {
 			draw_sprite_ext(s_Cursor, cursor, device_mouse_x_to_gui(0), device_mouse_y_to_gui(0), 2, 2, 0, c_white, 1);
 		}
-		
+
 	}
 	
 }

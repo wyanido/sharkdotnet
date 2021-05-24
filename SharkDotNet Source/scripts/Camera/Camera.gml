@@ -78,7 +78,7 @@ function Camera() constructor {
 			Resize();	
 		}
 		
-		if((keyboard_check(vk_space) && mouse_check_button(mb_left)) || mouse_check_button(mb_middle)) {
+		if((keyboard_check(vk_space) && mouse_check_button(mb_left)) || mouse_check_button(mb_middle)) && !obj_Game.game.showWelcome {
 			if(!panning) 
 			{
 				panning = true;

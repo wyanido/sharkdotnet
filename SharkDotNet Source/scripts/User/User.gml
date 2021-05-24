@@ -72,23 +72,22 @@ function PeerUser(_x, _y, _name) : User(_x, _y, _name) constructor {
 	
 	Render = function() {
 		if(visible) {
-			draw_sprite_ext(s_Cursor, 0, pos.x, pos.y, 2, 2, 0, c_white, 1);
+			var _z = obj_Game.game.view.zoom;
 			
-			draw_set_colour(c_black);
-			draw_set_alpha(0.5);
+			draw_sprite_ext(s_Cursor, 0, pos.x, pos.y, 2 / _z, 2 / _z, 0, c_white, 1);
 			
-			var _w = string_width(user) / 2;
-			var _h = string_height(user) / 2;
-			var _pad = 4;
-			
-			draw_rectangle(pos.x - _w - _pad + 8, pos.y - _h + 46 - _pad, pos.x + _w + _pad + 8, pos.y + _h + 46 + _pad, false);
-			draw_set_alpha(1);
-			
-			draw_set_colour(c_lime);
+			draw_set_colour(c_white);
 		
 			draw_set_valign(fa_top);
 			draw_set_halign(fa_center);
-			draw_text(pos.x + 8, pos.y + 38, user);
+			gpu_set_alphatestenable(true);
+			
+			gpu_set_blendmode_ext(bm_inv_dest_color, bm_inv_src_alpha);
+			draw_set_font(fnt_Label)
+			draw_text_transformed(pos.x + (15 / _z), pos.y + (38 / _z), user, 1 / _z, 1 / _z, 0);
+			draw_set_font(fnt_GUI);
+			gpu_set_blendmode(bm_normal);
+			
 			draw_set_halign(fa_left);
 		
 			draw_set_colour(c_black);
