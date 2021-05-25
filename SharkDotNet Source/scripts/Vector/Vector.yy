@@ -6,7 +6,7 @@
     "path": "folders/Core/Math.yy",
   },
   "resourceVersion": "1.0",
-  "name": "Vectors",
+  "name": "Vector",
   "tags": [],
   "resourceType": "GMScript",
 }

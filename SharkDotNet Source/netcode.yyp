@@ -12,7 +12,7 @@
     {"id":{"name":"s_Checker","path":"sprites/s_Checker/s_Checker.yy",},"order":0,},
     {"id":{"name":"fnt_Label","path":"fonts/fnt_Label/fnt_Label.yy",},"order":6,},
     {"id":{"name":"obj_Network","path":"objects/obj_Network/obj_Network.yy",},"order":4,},
-    {"id":{"name":"Vectors","path":"scripts/Vectors/Vectors.yy",},"order":0,},
+    {"id":{"name":"Vector","path":"scripts/Vector/Vector.yy",},"order":0,},
     {"id":{"name":"shd_Erase","path":"shaders/shd_Erase/shd_Erase.yy",},"order":2,},
     {"id":{"name":"Network","path":"scripts/Network/Network.yy",},"order":4,},
     {"id":{"name":"s_Icon","path":"sprites/s_Icon/s_Icon.yy",},"order":5,},
