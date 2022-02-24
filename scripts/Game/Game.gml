@@ -265,7 +265,7 @@ function Game() constructor {
 		cursorOnCanvas = (mouse_x > 0 && mouse_x < room_width && mouse_y > 0 && mouse_y < room_height);
 		cursorOnGUI = (_mY < 64);
 		cursorOnBorder = (_mX < 4 || _mY < 4 || _mX > _win.x - 6 || _mY > _win.y - 6);
-		panning = cursorOnCanvas && !cursorOnGUI && ;
+		panning = cursorOnCanvas && !cursorOnGUI;
 		
 		// SET ICON
 		if(cursorOnBorder || scale) 
